@@ -247,6 +247,176 @@ public class Board{
             new ArrayList<>(capturedBlackPieces);
     }
 
+    //Board State Management
+    public void saveState(){
+        BoardState state = new BoardState();
+        state.boardSnapshot = cloneBoardArray();
+        state.whiteCount = whitePiecesCount;
+        state.blackCount = blackPiecesCount;
+        state.whiteKings = whiteKingsCount;
+        state.blackKings = blackKingsCount;
+        state.captuWHITEWhite = new ArrayList<>(captuWhitePieces);
+        state.captuWHITEBlack = new ArrayList<>(captuBlackPieces);
+        
+        moveHistory.push(state);
+    }
+    public boolean canUndo() {
+        return !moveHistory.isEmpty();
+    }
+
+    public void undoLastMove(){
+        if (canUndo()) {
+            BoardState previousState = moveHistory.pop();
+            restoreState(previousState);
+            moveCount--; // Decrease move count on undo
+        }
+    }
+private void restoreState(BoardState state){
+    //restore board
+    for (int row = 0; row < BOARD_SIZE; row++) {
+        for (int col = 0; col < BOARD_SIZE; col++) {
+            board[row][col] = state.boardSnapshot[row][col];
+        }
+    }
+    // Restore counters
+    whitePiecesCount = state.whiteCount;
+    blackPiecesCount = state.blackCount;
+    whiteKingsCount = state.whiteKings;
+    blackKingsCount = state.blackKings;
+    
+    // Restore captuWHITE pieces
+    captuWhitePieces.addAll(state.captuWHITEWhite);
+    captuWhitePieces.clear();
+    captuBlackPieces.clear();
+    captuBlackPieces.addAll(state.captuWHITEBlack);
+}
+
+private Piece[][] cloneBoardArray() {
+    Piece[][] clone = new Piece[BOARD_SIZE][BOARD_SIZE];
+    for (int row = 0; row < BOARD_SIZE; row++) {
+        for (int col = 0; col < BOARD_SIZE; col++) {
+            Piece original = board[row][col];
+            clone[row][col] = original != null ? original.clone() : null;
+        }
+    }
+    return clone;
+}
+    public boolean hasValidMoves(Color color) {
+    List<Piece> pieces = getAllPieces(color);
+    for (Piece piece : pieces) {
+        if (hasValidMovesForPiece(piece)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+private boolean hasValidMovesForPiece(Piece piece) {
+    int row = piece.getRow();
+    int col = piece.getCol();
+    
+    // Check all four diagonal directions
+    int[][] directions = {{-1, -1}, {-1, 1}, {1, -1}, {1, 1}};
+    
+    for (int[] dir : directions) {
+        if (piece.canMoveInDirection(dir[0])) {
+            int newRow = row + dir[0];
+            int newCol = col + dir[1];
+            
+            // Simple move
+            if (isValidPosition(newRow, newCol) && isEmptySquare(newRow, newCol)) {
+                return true;
+            }
+            
+            // Jump move
+            int jumpRow = row + 2 * dir[0];
+            int jumpCol = col + 2 * dir[1];
+            if (isValidPosition(jumpRow, jumpCol) && 
+                isEmptySquare(jumpRow, jumpCol) &&
+                hasEnemyPiece(newRow, newCol, piece.getColor())) {
+                return true;
+            }
+        }
+    }
+    
+    return false;
+}
+
+public boolean isGameOver() {
+    return getPieceCount(Color.WHITE) == 0 || 
+           getPieceCount(Color.BLACK) == 0 ||
+           !hasValidMoves(Color.WHITE) || 
+           !hasValidMoves(Color.BLACK);
+}
+
+public Color getWinner() {
+    if (getPieceCount(Color.WHITE) == 0 || !hasValidMoves(Color.WHITE)) {
+        return Color.BLACK;
+    } else if (getPieceCount(Color.BLACK) == 0 || !hasValidMoves(Color.BLACK)) {
+        return Color.WHITE;
+    }
+    return null; // Game not over
+}
+
+    public Board clone() {
+    Board clonedBoard = new Board();
+    
+    // Clone board array
+    for (int row = 0; row < BOARD_SIZE; row++) {
+        for (int col = 0; col < BOARD_SIZE; col++) {
+            Piece original = this.board[row][col];
+            clonedBoard.board[row][col] = original != null ? original.clone() : null;
+        }
+    }
+    
+    // Clone other attributes
+    clonedBoard.whitePiecesCount = this.whitePiecesCount;
+    clonedBoard.blackPiecesCount = this.blackPiecesCount;
+    clonedBoard.whiteKingsCount = this.whiteKingsCount;
+    clonedBoard.blackKingsCount = this.blackKingsCount;
+    clonedBoard.moveCount = this.moveCount;
+    clonedBoard.lastMovedColor = this.lastMovedColor;
+    
+    // Clone captuWhite pieces
+    clonedBoard.captuWhitePieces.addAll(this.captuWhitePieces);
+    clonedBoard.captuWhitePieces.addAll(this.captuWhitePieces);
+    return clonedBoard;
+}
+
+@Override
+public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("  0 1 2 3 4 5 6 7\n");
+    
+    for (int row = 0; row < BOARD_SIZE; row++) {
+        sb.append(row).append(" ");
+        for (int col = 0; col < BOARD_SIZE; col++) {
+            Piece piece = getPieceAt(row, col);
+            if (piece != null) {
+                sb.append(piece.getDisplayString());
+            } else if (isDarkSquare(row, col)) {
+                sb.append("□");
+            } else {
+                sb.append("■");
+            }
+            sb.append(" ");
+        }
+        sb.append("\n");
+    }
+    
+    sb.append("White: ").append(whitePiecesCount).append(" pieces, ")
+      .append(whiteKingsCount).append(" kings\n");
+    sb.append("Black: ").append(blackPiecesCount).append(" pieces, ")
+      .append(blackKingsCount).append(" kings\n");
+    
+    return sb.toString();
+}
+
+// Getters
+public int getMoveCount() { return moveCount; }
+public Color getLastMovedColor() { return lastMovedColor; }
+public void setLastMovedColor(Color color) { this.lastMovedColor = color; }
+public void incrementMoveCount() { this.moveCount++; }
 
 
 
