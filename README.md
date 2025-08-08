@@ -19,13 +19,3 @@ The main goals of this repo are:
 - To have a personal reference for future projects
 - To share examples with others who are learning
 
----
-
-## 🗂 Project Structure
-
-Each project lives in its **own folder** and contains:
-project-name/
-│
-├── src/ # Java source files
-├── README.md # Project-specific readme
-└── resources/ # Any additional files or assets
